@@ -13,7 +13,7 @@ Você pode baixar a versão mais recente do **Ixtal Media Downloader** pronta pa
 ### 📋 Como usar:
 1. Baixe o arquivo `.zip` na seção de Releases.
 2. Extraia o conteúdo em qualquer pasta do seu computador.
-3. Dê dois cliques no arquivo **`IxtalMediaDownloader.exe`** para iniciar a aplicação.
+3. Dê dois cliques no arquivo `IxtalMediaDownloader.exe` para iniciar a aplicação.
 ---
 
 ## ✨ Funcionalidades
