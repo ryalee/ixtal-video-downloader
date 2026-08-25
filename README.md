@@ -8,6 +8,18 @@ O **Ixtal Media Downloader** é uma aplicação desktop moderna, rápida e intui
 
 ---
 
+## 🚀 Download
+
+Você pode baixar a versão mais recente do **Ixtal Media Downloader** pronta para uso (portátil, não requer instalação de Java):
+
+[![Download para Windows](https://img.shields.io/badge/Download-Windows%20(.zip)-blue?style=for-the-badge&logo=windows)](https://github.com/SEU_USUARIO/SEU_REPOSITORIO/releases/latest)
+
+### 📋 Como usar:
+1. Baixe o arquivo `.zip` na seção de Releases.
+2. Extraia o conteúdo em qualquer pasta do seu computador.
+3. Dê dois cliques no arquivo **`IxtalMediaDownloader.exe`** para iniciar a aplicação.
+
+---
 ## ✨ Funcionalidades
 
 - 🎥 **Download de Vídeo**: Baixe vídeos em MP4 em várias resoluções (4K, 1080p, 720p, 480p). obs: ainda estou implementando e melhorando a lógica de seleção de qualidade então pode ser que ainda não funcione bem 
