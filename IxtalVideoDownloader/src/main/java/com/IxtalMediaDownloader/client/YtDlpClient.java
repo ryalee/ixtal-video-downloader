@@ -9,10 +9,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class YtDlpClient {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final Pattern PROGRESS_PATTERN = Pattern.compile("\\[download\\]\\s+([0-9]+(?:\\.[0-9]+)?|\\.[0-9]+|[0-9]+)%");
 
     public MediaInfo getVideoInfo(String videoUrl) throws Exception {
         ProcessBuilder processBuilder = new ProcessBuilder(
@@ -20,6 +24,7 @@ public class YtDlpClient {
                 "--dump-json",
                 "--no-playlist",
                 "--no-warnings",
+                "--extractor-args", "youtube:player_client=android,web",
                 videoUrl
         );
 
@@ -56,45 +61,51 @@ public class YtDlpClient {
         return objectMapper.readValue(jsonOutput.toString(), MediaInfo.class);
     }
 
-    public void downloadMedia(String videoUrl, Path outputDir, String formatChoice, String resolutionChoice) throws Exception {
+    public void downloadMedia(String videoUrl, Path outputDir, String formatChoice, String resolutionChoice, String audioQualityChoice, BiConsumer<Double, String> progressListener) throws Exception {
         String outputTemplate = outputDir.resolve("%(title)s.%(ext)s").toString();
 
         List<String> command = new ArrayList<>();
         command.add("yt-dlp");
 
-        // essa parada aqui é pra baixar mais rapido
         command.addAll(Arrays.asList(
-                "-N", "4",                       // usa 4 conexões paralelas para download
-                "--concurrent-fragments", "4",   // baixa fragmentos de vídeos DASH simultaneamente
-                "--buffersize", "16M",           // aumenta o buffer em ram para gravação mais rápida no disco
+                "--newline",
+                "--concurrent-fragments", "4",
+                "--buffer-size", "16k",
                 "--no-playlist",
-                "--downloader", "aria2c",
-                "--downloader-args", "aria2c:-j 8 -s 8 -x 8k 1M"
+                "--extractor-args", "youtube:player_client=android,web"
         ));
 
-
-        // escolha de audio ou video
         if ("Apenas Áudio (MP3)".equals(formatChoice)) {
+            // Trata a qualidade do áudio baseada na seleção (ex: 320k, 192k, 128k)
+            String bitrate = "320k";
+            if (audioQualityChoice != null && audioQualityChoice.contains("192")) {
+                bitrate = "192k";
+            } else if (audioQualityChoice != null && audioQualityChoice.contains("128")) {
+                bitrate = "128k";
+            }
+
             command.addAll(Arrays.asList(
                     "-f", "bestaudio/best",
                     "-x",
                     "--audio-format", "mp3",
+                    "--audio-quality", bitrate,
                     "-o", outputTemplate,
                     videoUrl
             ));
         } else {
+            // Regras estritas de resolução (força a altura solicitada ou a mais próxima abaixo dela)
             String formatRule;
             switch (resolutionChoice) {
                 case "1080p":
-                    formatRule = "bestvideo[height<=1080]+bestaudio/best[height<=1080]";
+                    formatRule = "bestvideo[height=1080]+bestaudio/bestvideo[height<=1080]+bestaudio/best";
                     break;
                 case "720p":
-                    formatRule = "bestvideo[height<=720]+bestaudio/best[height<=720]";
+                    formatRule = "bestvideo[height=720]+bestaudio/bestvideo[height<=720]+bestaudio/best";
                     break;
                 case "480p":
-                    formatRule = "bestvideo[height<=480]+bestaudio/best[height<=480]";
+                    formatRule = "bestvideo[height=480]+bestaudio/bestvideo[height<=480]+bestaudio/best";
                     break;
-                default:
+                default: // "Melhor Qualidade (1080p+ / 4K)"
                     formatRule = "bestvideo+bestaudio/best";
                     break;
             }
@@ -108,15 +119,40 @@ public class YtDlpClient {
         }
 
         ProcessBuilder pb = new ProcessBuilder(command);
-        pb.inheritIO();
-        executeProcess(pb);
-    }
+        pb.redirectErrorStream(true);
 
-    private void executeProcess(ProcessBuilder pb) throws Exception {
         Process process = pb.start();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                parseProgressLine(line, progressListener);
+            }
+        }
+
         int exitCode = process.waitFor();
         if (exitCode != 0) {
             throw new RuntimeException("Falha no download. Código de erro: " + exitCode);
+        }
+    }
+
+    private void parseProgressLine(String line, BiConsumer<Double, String> progressListener) {
+        if (progressListener == null || line == null) return;
+
+        Matcher matcher = PROGRESS_PATTERN.matcher(line);
+        if (matcher.find()) {
+            try {
+                double percentage = Double.parseDouble(matcher.group(1));
+                double normalizedProgress = percentage / 100.0;
+
+                String statusMsg = String.format("Baixando: %.1f%%", percentage);
+                progressListener.accept(normalizedProgress, statusMsg);
+            } catch (NumberFormatException ignored) {
+            }
+        } else if (line.contains("[Merger]") || line.contains("Merging")) {
+            progressListener.accept(-1.0, "Juntando áudio e vídeo com FFmpeg...");
+        } else if (line.contains("[ExtractAudio]") || line.contains("Converting")) {
+            progressListener.accept(-1.0, "Convertendo para MP3...");
         }
     }
 }

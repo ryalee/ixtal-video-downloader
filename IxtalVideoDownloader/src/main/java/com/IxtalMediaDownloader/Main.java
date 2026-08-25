@@ -3,6 +3,7 @@ package com.IxtalMediaDownloader;
 import com.IxtalMediaDownloader.client.YtDlpClient;
 import com.IxtalMediaDownloader.model.MediaInfo;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -37,9 +38,9 @@ public class Main extends Application {
     private ProgressBar progressBar;
     private Label statusLabel;
 
-    // Novos seletores
     private ComboBox<String> formatCombo;
     private ComboBox<String> resolutionCombo;
+    private ComboBox<String> audioQualityCombo;
 
     @Override
     public void start(Stage stage) {
@@ -74,24 +75,37 @@ public class Main extends Application {
         cardBox.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 15; -fx-background-radius: 8;");
         cardBox.setAlignment(Pos.CENTER_LEFT);
 
-        // --- Opções de Formato e Resolução ---
+        // Seletor de Formato
         Label formatLabel = new Label("Tipo:");
         formatCombo = new ComboBox<>();
         formatCombo.getItems().addAll("Vídeo (MP4)", "Apenas Áudio (MP3)");
         formatCombo.setValue("Vídeo (MP4)");
 
+        // Seletor de Resolução do Vídeo
         Label resLabel = new Label("Qualidade:");
         resolutionCombo = new ComboBox<>();
         resolutionCombo.getItems().addAll("Melhor Qualidade (1080p+ / 4K)", "1080p", "720p", "480p");
         resolutionCombo.setValue("Melhor Qualidade (1080p+ / 4K)");
 
-        // Desabilita resolução se escolher apenas áudio
+        // Seletor de Qualidade do Áudio
+        audioQualityCombo = new ComboBox<>();
+        audioQualityCombo.getItems().addAll("320 kbps (Alta)", "192 kbps (Média)", "128 kbps (Normal)");
+        audioQualityCombo.setValue("320 kbps (Alta)");
+        audioQualityCombo.setVisible(false);
+        audioQualityCombo.setManaged(false); // Remove do layout visual quando estiver em formato vídeo
+
+        // Alterna dinamicamente entre o combo de vídeo e o de áudio
         formatCombo.setOnAction(e -> {
             boolean isAudio = "Apenas Áudio (MP3)".equals(formatCombo.getValue());
-            resolutionCombo.setDisable(isAudio);
+
+            resolutionCombo.setVisible(!isAudio);
+            resolutionCombo.setManaged(!isAudio);
+
+            audioQualityCombo.setVisible(isAudio);
+            audioQualityCombo.setManaged(isAudio);
         });
 
-        HBox optionsBox = new HBox(15, formatLabel, formatCombo, resLabel, resolutionCombo);
+        HBox optionsBox = new HBox(15, formatLabel, formatCombo, resLabel, resolutionCombo, audioQualityCombo);
         optionsBox.setAlignment(Pos.CENTER_LEFT);
 
         // Seção de Pasta
@@ -168,11 +182,8 @@ public class Main extends Application {
 
         task.setOnFailed(e -> {
             setLoadingState(false, "Erro ao carregar vídeo.");
-
-            // Pega a mensagem real disparada pelo YtDlpClient
             Throwable exception = task.getException();
             String detalheDoErro = (exception != null) ? exception.getMessage() : "Erro desconhecido";
-
             showError(detalheDoErro);
         });
 
@@ -192,36 +203,41 @@ public class Main extends Application {
     private void onDownload() {
         if (currentMediaInfo == null) return;
 
-        setLoadingState(true, "Processando o download...");
-        progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+        setLoadingState(true, "Iniciando download...");
+        progressBar.setProgress(0);
 
         String format = formatCombo.getValue();
         String resolution = resolutionCombo.getValue();
+        String audioQuality = audioQualityCombo.getValue();
         String url = urlField.getText().trim();
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                client.downloadMedia(url, selectedFolder.toPath(), format, resolution);
+                client.downloadMedia(url, selectedFolder.toPath(), format, resolution, audioQuality, (progress, statusText) -> {
+                    Platform.runLater(() -> {
+                        if (progress < 0) {
+                            progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+                        } else {
+                            progressBar.setProgress(progress);
+                        }
+                        statusLabel.setText(statusText);
+                    });
+                });
                 return null;
             }
         };
 
         task.setOnSucceeded(e -> {
-            setLoadingState(false, "Download concluído!");
+            setLoadingState(false, "Download concluído com sucesso!");
             progressBar.setProgress(1.0);
         });
 
         task.setOnFailed(e -> {
-            setLoadingState(false, "Erro ao carregar vídeo.");
-
-            // Captura a causa real do erro para exibir no alerta
+            setLoadingState(false, "Erro no download.");
             Throwable exception = task.getException();
-            String errorMsg = (exception != null && exception.getMessage() != null)
-                    ? exception.getMessage()
-                    : "Erro desconhecido ao executar o yt-dlp.";
-
-            showError("Não foi possível obter dados da URL informada:\n\n" + errorMsg);
+            String detalhe = (exception != null) ? exception.getMessage() : "Erro desconhecido.";
+            showError(detalhe);
         });
 
         new Thread(task).start();
@@ -232,7 +248,8 @@ public class Main extends Application {
         downloadBtn.setDisable(isLoading || currentMediaInfo == null);
         selectFolderBtn.setDisable(isLoading);
         formatCombo.setDisable(isLoading);
-        resolutionCombo.setDisable(isLoading || "Apenas Áudio (MP3)".equals(formatCombo.getValue()));
+        resolutionCombo.setDisable(isLoading);
+        audioQualityCombo.setDisable(isLoading);
         progressBar.setVisible(isLoading);
         statusLabel.setText(status);
     }
