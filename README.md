@@ -33,7 +33,7 @@ Você pode baixar a versão mais recente do **Ixtal Media Downloader** pronta pa
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Linguagem**: Java (JDK 17+)
+- **Linguagem**: Java (JDK 21+)
 - **Interface Gráfica**: JavaFX
 - **Gerenciador de Dependências**: Maven
 - **Motor de Download**: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
