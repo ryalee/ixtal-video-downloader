@@ -1,3 +1,4 @@
 # Project exclude paths
 /IxtalVideoDownloader/target/
 /IxtalVideoDownloader/src/main/resources/bin/
+.gitignore
