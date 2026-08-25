@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
 public class YtDlpClient {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private static final Pattern PROGRESS_PATTERN = Pattern.compile("\\[download\\]\\s+([0-9]+(?:\\.[0-9]+)?|\\.[0-9]+|[0-9]+)%");
+    // 1. Correção: Removida a barra redundante '\]' do conjunto na expressão regular
+    private static final Pattern PROGRESS_PATTERN = Pattern.compile("\\[download]\\s+([0-9]+(?:\\.[0-9]+)?|\\.[0-9]+|[0-9]+)%");
 
     public MediaInfo getVideoInfo(String videoUrl) throws Exception {
         ProcessBuilder processBuilder = new ProcessBuilder(
@@ -28,37 +29,44 @@ public class YtDlpClient {
                 videoUrl
         );
 
+        // 2. Correção: Gerenciamento do Process para garantir o fechamento do recurso
         Process process = processBuilder.start();
 
-        StringBuilder jsonOutput = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().startsWith("{")) {
-                    jsonOutput.append(line);
+        try {
+            StringBuilder jsonOutput = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().startsWith("{")) {
+                        jsonOutput.append(line);
+                    }
                 }
             }
-        }
 
-        StringBuilder errorOutput = new StringBuilder();
-        try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                errorOutput.append(line).append("\n");
+            StringBuilder errorOutput = new StringBuilder();
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                while ((line = errorReader.readLine()) != null) {
+                    errorOutput.append(line).append("\n");
+                }
             }
+
+            int exitCode = process.waitFor();
+
+            if (exitCode != 0) {
+                // 3. Correção: Removida a chamada redundante .toString() sobre variável do tipo String
+                throw new RuntimeException("Erro ao buscar informações do vídeo:\n" + errorOutput);
+            }
+
+            // 4. Correção: Substituído .length() == 0 pelo método .isEmpty()
+            if (jsonOutput.isEmpty()) {
+                throw new RuntimeException("Não foi possível extrair os dados do vídeo. Verifique se o link é válido.");
+            }
+
+            return objectMapper.readValue(jsonOutput.toString(), MediaInfo.class);
+        } finally {
+            process.destroy();
         }
-
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0) {
-            throw new RuntimeException("Erro ao buscar informações do vídeo:\n" + errorOutput.toString());
-        }
-
-        if (jsonOutput.length() == 0) {
-            throw new RuntimeException("Não foi possível extrair os dados do vídeo. Verifique se o link é válido.");
-        }
-
-        return objectMapper.readValue(jsonOutput.toString(), MediaInfo.class);
     }
 
     public void downloadMedia(String videoUrl, Path outputDir, String formatChoice, String resolutionChoice, String audioQualityChoice, BiConsumer<Double, String> progressListener) throws Exception {
@@ -76,7 +84,6 @@ public class YtDlpClient {
         ));
 
         if ("Apenas Áudio (MP3)".equals(formatChoice)) {
-            // Trata a qualidade do áudio baseada na seleção (ex: 320k, 192k, 128k)
             String bitrate = "320k";
             if (audioQualityChoice != null && audioQualityChoice.contains("192")) {
                 bitrate = "192k";
@@ -93,22 +100,13 @@ public class YtDlpClient {
                     videoUrl
             ));
         } else {
-            // Regras estritas de resolução (força a altura solicitada ou a mais próxima abaixo dela)
-            String formatRule;
-            switch (resolutionChoice) {
-                case "1080p":
-                    formatRule = "bestvideo[height=1080]+bestaudio/bestvideo[height<=1080]+bestaudio/best";
-                    break;
-                case "720p":
-                    formatRule = "bestvideo[height=720]+bestaudio/bestvideo[height<=720]+bestaudio/best";
-                    break;
-                case "480p":
-                    formatRule = "bestvideo[height=480]+bestaudio/bestvideo[height<=480]+bestaudio/best";
-                    break;
-                default: // "Melhor Qualidade (1080p+ / 4K)"
-                    formatRule = "bestvideo+bestaudio/best";
-                    break;
-            }
+            // 5. Correção: Atualizado para o Enhanced Switch com sintaxe de seta (->)
+            String formatRule = switch (resolutionChoice) {
+                case "1080p" -> "bestvideo[height=1080]+bestaudio/bestvideo[height<=1080]+bestaudio/best";
+                case "720p" -> "bestvideo[height=720]+bestaudio/bestvideo[height<=720]+bestaudio/best";
+                case "480p" -> "bestvideo[height=480]+bestaudio/bestvideo[height<=480]+bestaudio/best";
+                default -> "bestvideo+bestaudio/best";
+            };
 
             command.addAll(Arrays.asList(
                     "-f", formatRule,
@@ -121,18 +119,23 @@ public class YtDlpClient {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
 
+        // 6. Correção: Process gerenciado de forma segura no bloco do download
         Process process = pb.start();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                parseProgressLine(line, progressListener);
+        try {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    parseProgressLine(line, progressListener);
+                }
             }
-        }
 
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new RuntimeException("Falha no download. Código de erro: " + exitCode);
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException("Falha no download. Código de erro: " + exitCode);
+            }
+        } finally {
+            process.destroy();
         }
     }
 
