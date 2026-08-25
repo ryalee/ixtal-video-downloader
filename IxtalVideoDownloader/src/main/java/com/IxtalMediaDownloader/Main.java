@@ -57,7 +57,7 @@ public class Main extends Application {
         fetchBtn.setPrefHeight(35);
         fetchBtn.setOnAction(e -> onFetchInfo());
 
-        // Card do Vídeo
+        // card do vídeo
         thumbnailView = new ImageView();
         thumbnailView.setFitWidth(200);
         thumbnailView.setFitHeight(120);
@@ -75,26 +75,26 @@ public class Main extends Application {
         cardBox.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 15; -fx-background-radius: 8;");
         cardBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Seletor de Formato
+        // formato
         Label formatLabel = new Label("Tipo:");
         formatCombo = new ComboBox<>();
         formatCombo.getItems().addAll("Vídeo (MP4)", "Apenas Áudio (MP3)");
         formatCombo.setValue("Vídeo (MP4)");
 
-        // Seletor de Resolução do Vídeo
+        // qualidade do vídeo
         Label resLabel = new Label("Qualidade:");
         resolutionCombo = new ComboBox<>();
         resolutionCombo.getItems().addAll("Melhor Qualidade (1080p+ / 4K)", "1080p", "720p", "480p");
         resolutionCombo.setValue("Melhor Qualidade (1080p+ / 4K)");
 
-        // Seletor de Qualidade do Áudio
+        // qualidade do áudio
         audioQualityCombo = new ComboBox<>();
         audioQualityCombo.getItems().addAll("320 kbps (Alta)", "192 kbps (Média)", "128 kbps (Normal)");
         audioQualityCombo.setValue("320 kbps (Alta)");
         audioQualityCombo.setVisible(false);
         audioQualityCombo.setManaged(false); // Remove do layout visual quando estiver em formato vídeo
 
-        // Alterna dinamicamente entre o combo de vídeo e o de áudio
+        // muda dinamicamente entre as opções de vídeo e as de áudio
         formatCombo.setOnAction(e -> {
             boolean isAudio = "Apenas Áudio (MP3)".equals(formatCombo.getValue());
 
@@ -108,7 +108,7 @@ public class Main extends Application {
         HBox optionsBox = new HBox(15, formatLabel, formatCombo, resLabel, resolutionCombo, audioQualityCombo);
         optionsBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Seção de Pasta
+        // seção da pasta
         Label folderTitle = new Label("Salvar em:");
         folderPathLabel = new Label(selectedFolder.getAbsolutePath());
         folderPathLabel.setStyle("-fx-font-style: italic;");
@@ -119,7 +119,7 @@ public class Main extends Application {
         HBox folderBox = new HBox(10, folderTitle, folderPathLabel, selectFolderBtn);
         folderBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Download e Progresso
+        // download e barra de progresso
         downloadBtn = new Button("Baixar Mídia");
         downloadBtn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
         downloadBtn.setPrefWidth(200);
@@ -137,7 +137,7 @@ public class Main extends Application {
         VBox statusBox = new VBox(5, progressBar, statusLabel);
         statusBox.setAlignment(Pos.CENTER);
 
-        // Layout Principal
+        // layout principal
         HBox inputRow = new HBox(10, urlField, fetchBtn);
         HBox.setHgrow(urlField, Priority.ALWAYS);
         HBox.setHgrow(folderPathLabel, Priority.ALWAYS);

@@ -21,7 +21,7 @@ O **Ixtal Media Downloader** é uma aplicação desktop moderna, rápida e intui
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Linguagem**: Java (JDK 17+)
+- **Linguagem**: Java (JDK 26)
 - **Interface Gráfica**: JavaFX
 - **Gerenciador de Dependências**: Maven
 - **Motor de Download**: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
