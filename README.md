@@ -2,10 +2,6 @@
 
 O **Ixtal Media Downloader** é uma aplicação desktop moderna, rápida e intuitiva desenvolvida em JavaFX para download de áudios e vídeos do YouTube. Utilizando a potência do `yt-dlp` e `ffmpeg`, o programa permite obter mídias com máxima qualidade sem complicações.
 
-![JavaFX](https://img.shields.io/badge/JavaFX-17%2B-orange?style=for-the-badge&logo=openjdk)
-![yt-dlp](https://img.shields.io/badge/Engine-yt--dlp-red?style=for-the-badge&logo=youtube)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
-
 ---
 
 ## 🚀 Download
@@ -33,7 +29,7 @@ Você pode baixar a versão mais recente do **Ixtal Media Downloader** pronta pa
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Linguagem**: Java (JDK 21+)
+- **Linguagem**: Java
 - **Interface Gráfica**: JavaFX
 - **Gerenciador de Dependências**: Maven
 - **Motor de Download**: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
