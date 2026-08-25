@@ -1,3 +1,7 @@
 # Project exclude paths
 /IxtalVideoDownloader/target/
 /IxtalVideoDownloader/src/main/resources/bin/
+
+dependency-reduced-pom.xml
+*.iml
+.idea/
