@@ -1,0 +1,42 @@
+/* Fundo da janela */
+.root {
+    -fx-background-color: #1e1e2e;
+    -fx-font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* Rótulos / Textos */
+.label {
+    -fx-text-fill: #cdd6f4;
+    -fx-font-size: 14px;
+}
+
+/* Campos de entrada */
+.text-field {
+    -fx-background-color: #313244;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 6px;
+    -fx-padding: 10px;
+    -fx-border-color: #45475a;
+    -fx-border-radius: 6px;
+}
+
+/* Botão Principal de Download */
+.button-primary {
+    -fx-background-color: #89b4fa;
+    -fx-text-fill: #11111b;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-background-radius: 6px;
+    -fx-padding: 10px 20px;
+    -fx-cursor: hand;
+}
+
+.button-primary:hover {
+    -fx-background-color: #b4befe;
+}
+
+/* Barra de Progresso */
+.progress-bar .bar {
+    -fx-background-color: #a6e3a1;
+    -fx-background-radius: 4px;
+}

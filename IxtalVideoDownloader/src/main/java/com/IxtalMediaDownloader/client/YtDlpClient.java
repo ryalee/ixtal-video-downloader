@@ -4,7 +4,9 @@ import com.IxtalMediaDownloader.model.MediaInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,12 +18,50 @@ import java.util.regex.Pattern;
 public class YtDlpClient {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    // 1. Correção: Removida a barra redundante '\]' do conjunto na expressão regular
     private static final Pattern PROGRESS_PATTERN = Pattern.compile("\\[download]\\s+([0-9]+(?:\\.[0-9]+)?|\\.[0-9]+|[0-9]+)%");
 
+    // metodo para pegar o caminho do executável dentro da pasta /bin
+    private String getExecutablePath(String executableName) {
+        // procura na pasta bin
+        File localBinFolder = new File("bin", executableName);
+        if (localBinFolder.exists()) {
+            return localBinFolder.getAbsolutePath();
+        }
+
+        File appBinFolder = new File("app/bin", executableName);
+        if (appBinFolder.exists()) {
+            return appBinFolder.getAbsolutePath();
+        }
+
+        // fallback para desenvolvimento local na IDE
+        File devBin = new File("src/main/resources/bin/" + executableName);
+        if (devBin.exists()) {
+            return devBin.getAbsolutePath();
+        }
+
+        // se estiver dentro do jar, extrai para uma pasta temporária do sistema
+        try {
+            java.io.InputStream inputStream = getClass().getResourceAsStream("/bin/" + executableName);
+            if (inputStream != null) {
+                File tempFile = new File(System.getProperty("java.io.tmpdir"), executableName);
+                if (!tempFile.exists()) {
+                    java.nio.file.Files.copy(inputStream, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    tempFile.setExecutable(true);
+                }
+                return tempFile.getAbsolutePath();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return executableName; // comando global caso falhe
+    }
+
     public MediaInfo getVideoInfo(String videoUrl) throws Exception {
+        String ytDlpPath = getExecutablePath("yt-dlp.exe");
+
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "yt-dlp",
+                ytDlpPath,
                 "--dump-json",
                 "--no-playlist",
                 "--no-warnings",
@@ -29,7 +69,6 @@ public class YtDlpClient {
                 videoUrl
         );
 
-        // 2. Correção: Gerenciamento do Process para garantir o fechamento do recurso
         Process process = processBuilder.start();
 
         try {
@@ -54,11 +93,9 @@ public class YtDlpClient {
             int exitCode = process.waitFor();
 
             if (exitCode != 0) {
-                // 3. Correção: Removida a chamada redundante .toString() sobre variável do tipo String
                 throw new RuntimeException("Erro ao buscar informações do vídeo:\n" + errorOutput);
             }
 
-            // 4. Correção: Substituído .length() == 0 pelo método .isEmpty()
             if (jsonOutput.isEmpty()) {
                 throw new RuntimeException("Não foi possível extrair os dados do vídeo. Verifique se o link é válido.");
             }
@@ -70,17 +107,27 @@ public class YtDlpClient {
     }
 
     public void downloadMedia(String videoUrl, Path outputDir, String formatChoice, String resolutionChoice, String audioQualityChoice, BiConsumer<Double, String> progressListener) throws Exception {
-        String outputTemplate = outputDir.resolve("%(title)s.%(ext)s").toString();
+        // cria um diretório temporario exclusivo pra esse download no temp do sistema
+        Path tempFolder = java.nio.file.Files.createTempDirectory("ixtal_download_");
+
+        // template aponta pra pasta temp
+        String tempOutputTemplate = tempFolder.resolve("%(title)s.%(ext)s").toString();
+
+        // mapeia os caminhos dos executáveis
+        String ytDlpPath = getExecutablePath("yt-dlp.exe");
+        String ffmpegPath = getExecutablePath("ffmpeg.exe");
 
         List<String> command = new ArrayList<>();
-        command.add("yt-dlp");
+        command.add(ytDlpPath);
 
+        // configs globais
         command.addAll(Arrays.asList(
                 "--newline",
                 "--concurrent-fragments", "4",
                 "--buffer-size", "16k",
                 "--no-playlist",
-                "--extractor-args", "youtube:player_client=android,web"
+                "--ffmpeg-location", ffmpegPath,
+                "--js-runtimes", "node"
         ));
 
         if ("Apenas Áudio (MP3)".equals(formatChoice)) {
@@ -96,22 +143,22 @@ public class YtDlpClient {
                     "-x",
                     "--audio-format", "mp3",
                     "--audio-quality", bitrate,
-                    "-o", outputTemplate,
+                    "-o", tempOutputTemplate,
                     videoUrl
             ));
         } else {
-            // 5. Correção: Atualizado para o Enhanced Switch com sintaxe de seta (->)
+            // regra pra mesclar vídeo e áudio em MP4
             String formatRule = switch (resolutionChoice) {
-                case "1080p" -> "bestvideo[height=1080]+bestaudio/bestvideo[height<=1080]+bestaudio/best";
-                case "720p" -> "bestvideo[height=720]+bestaudio/bestvideo[height<=720]+bestaudio/best";
-                case "480p" -> "bestvideo[height=480]+bestaudio/bestvideo[height<=480]+bestaudio/best";
-                default -> "bestvideo+bestaudio/best";
+                case "1080p" -> "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best";
+                case "720p"  -> "bestvideo[height<=720]+bestaudio/best[height<=720]/best";
+                case "480p"  -> "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
+                default      -> "bestvideo+bestaudio/best";
             };
 
             command.addAll(Arrays.asList(
                     "-f", formatRule,
                     "--merge-output-format", "mp4",
-                    "-o", outputTemplate,
+                    "-o", tempOutputTemplate,
                     videoUrl
             ));
         }
@@ -119,7 +166,6 @@ public class YtDlpClient {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
 
-        // 6. Correção: Process gerenciado de forma segura no bloco do download
         Process process = pb.start();
 
         try {
@@ -134,8 +180,25 @@ public class YtDlpClient {
             if (exitCode != 0) {
                 throw new RuntimeException("Falha no download. Código de erro: " + exitCode);
             }
+
+            // transfere o arquivo final da pasta temp para a pasta selecionada
+            try (var stream = java.nio.file.Files.list(tempFolder)) {
+                for (Path file : stream.toList()) {
+                    Path targetPath = outputDir.resolve(file.getFileName());
+                    java.nio.file.Files.move(file, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+
         } finally {
             process.destroy();
+            // limpaa pasta temporária do sistema
+            try {
+                java.nio.file.Files.walk(tempFolder)
+                        .sorted(java.util.Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (Exception ignored) {
+            }
         }
     }
 

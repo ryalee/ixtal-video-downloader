@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/IxtalVideoDownloader/IxtalVideoDownloader.iml" filepath="$PROJECT_DIR$/IxtalVideoDownloader/IxtalVideoDownloader.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ixtal.iml" filepath="$PROJECT_DIR$/.idea/ixtal.iml" />
     </modules>
   </component>

@@ -19,6 +19,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 public class Main extends Application {
 
@@ -59,20 +60,23 @@ public class Main extends Application {
 
         // card do vídeo
         thumbnailView = new ImageView();
-        thumbnailView.setFitWidth(200);
-        thumbnailView.setFitHeight(120);
+        thumbnailView.setFitWidth(180);
+        thumbnailView.setFitHeight(100);
         thumbnailView.setPreserveRatio(true);
 
         titleLabel = new Label("Nenhum vídeo carregado");
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #ffffff;");
         titleLabel.setWrapText(true);
 
         channelLabel = new Label("Canal: -");
+        channelLabel.setStyle("-fx-text-fill: #a6adc8;");
+
         durationLabel = new Label("Duração: -");
+        durationLabel.setStyle("-fx-text-fill: #a6adc8;");
 
         VBox infoBox = new VBox(8, titleLabel, channelLabel, durationLabel);
         HBox cardBox = new HBox(15, thumbnailView, infoBox);
-        cardBox.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 15; -fx-background-radius: 8;");
+        cardBox.setStyle("-fx-background-color: #313244; -fx-padding: 15; -fx-background-radius: 8; -fx-border-color: #45475a; -fx-border-radius: 8;");
         cardBox.setAlignment(Pos.CENTER_LEFT);
 
         // formato
@@ -92,7 +96,7 @@ public class Main extends Application {
         audioQualityCombo.getItems().addAll("320 kbps (Alta)", "192 kbps (Média)", "128 kbps (Normal)");
         audioQualityCombo.setValue("320 kbps (Alta)");
         audioQualityCombo.setVisible(false);
-        audioQualityCombo.setManaged(false); // Remove do layout visual quando estiver em formato vídeo
+        audioQualityCombo.setManaged(false);
 
         // muda dinamicamente entre as opções de vídeo e as de áudio
         formatCombo.setOnAction(e -> {
@@ -121,7 +125,7 @@ public class Main extends Application {
 
         // download e barra de progresso
         downloadBtn = new Button("Baixar Mídia");
-        downloadBtn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+        downloadBtn.getStyleClass().add("button-primary");
         downloadBtn.setPrefWidth(200);
         downloadBtn.setPrefHeight(40);
         downloadBtn.setDisable(true);
@@ -132,7 +136,6 @@ public class Main extends Application {
         progressBar.setVisible(false);
 
         statusLabel = new Label("Pronto.");
-        statusLabel.setStyle("-fx-text-fill: #666666;");
 
         VBox statusBox = new VBox(5, progressBar, statusLabel);
         statusBox.setAlignment(Pos.CENTER);
@@ -146,7 +149,13 @@ public class Main extends Application {
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
 
+        // Criação da Scene
         Scene scene = new Scene(root, 680, 580);
+
+        // VINCULA O CSS CORRETAMENTE APÓS CRIAR A SCENE
+        String cssPath = Objects.requireNonNull(getClass().getResource("/style.css")).toExternalForm();
+        scene.getStylesheets().add(cssPath);
+
         stage.setTitle("Ixtal Media Downloader");
         stage.setScene(scene);
         stage.setResizable(false);
@@ -172,8 +181,10 @@ public class Main extends Application {
             channelLabel.setText("Canal: " + currentMediaInfo.getChannel());
             durationLabel.setText("Duração: " + (currentMediaInfo.getDuration() / 60) + " min");
 
-            if (currentMediaInfo.getThumbnail() != null) {
-                thumbnailView.setImage(new Image(currentMediaInfo.getThumbnail(), true));
+            if (currentMediaInfo.getThumbnail() != null && !currentMediaInfo.getThumbnail().isEmpty()) {
+                // carrega em background sem travar a interface
+                Image img = new Image(currentMediaInfo.getThumbnail(), 180, 100, true, true, true);
+                thumbnailView.setImage(img);
             }
 
             setLoadingState(false, "Informações carregadas!");
