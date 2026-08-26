@@ -4,13 +4,11 @@
     -fx-font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
-/* Rótulos / Textos */
 .label {
     -fx-text-fill: #cdd6f4;
     -fx-font-size: 14px;
 }
 
-/* Campos de entrada */
 .text-field {
     -fx-background-color: #313244;
     -fx-text-fill: #ffffff;
@@ -20,7 +18,79 @@
     -fx-border-radius: 6px;
 }
 
-/* Botão Principal de Download */
+/* caixa dos seletores de qualidade e formato (audio/video)*/
+.combo-box {
+    -fx-background-color: #2b2d42;
+    -fx-border-color: #4a4e69;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-mark-color: #ffffff; /* Cor da seta para baixo */
+}
+
+.combo-box:focused {
+    -fx-border-color: #6c5ce7;
+    -fx-effect: dropshadow(three-pass-box, rgba(108, 92, 231, 0.4), 6, 0, 0, 0);
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+    -fx-padding: 6px 10px;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #1e1e2e;
+    -fx-border-color: #4a4e69;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 4px;
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b8c0e0;
+    -fx-padding: 8px 12px;
+    -fx-cell-size: 32px;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #313244;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 4px;
+}
+
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #6c5ce7;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 4px;
+}
+
+/* botão de trocarpasta */
+.button-secondary {
+    -fx-background-color: #313244;
+    -fx-text-fill: #cdd6f4;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-border-color: #45475a;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 6px 14px;
+    -fx-cursor: hand;
+}
+
+.button-secondary:hover {
+    -fx-background-color: #45475a;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #585b70;
+}
+
+.button-secondary:pressed {
+    -fx-background-color: #1e1e2e;
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+/* botão de download */
 .button-primary {
     -fx-background-color: #89b4fa;
     -fx-text-fill: #11111b;
@@ -37,6 +107,6 @@
 
 /* Barra de Progresso */
 .progress-bar .bar {
-    -fx-background-color: #a6e3a1;
+    -fx-background-color: #72e066;
     -fx-background-radius: 4px;
 }

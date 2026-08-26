@@ -47,8 +47,21 @@ public class Main extends Application {
     public void start(Stage stage) {
         selectedFolder = Paths.get(System.getProperty("user.home"), "Downloads").toFile();
 
-        Label mainTitle = new Label("Ixtal Media Downloader");
-        mainTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        ImageView appLogoView = new ImageView();
+        var logoStream = getClass().getResourceAsStream("/icon.png");
+        if (logoStream != null) {
+            appLogoView.setImage(new Image(logoStream));
+            appLogoView.setFitWidth(32);
+            appLogoView.setFitHeight(32);
+            appLogoView.setPreserveRatio(true);
+        }
+
+        Label mainTitle = new Label("Ixtal Downloader");
+        mainTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
+
+// Junta o ícone e o texto em uma linha horizontal
+        HBox headerBox = new HBox(10, appLogoView, mainTitle);
+        headerBox.setAlignment(Pos.CENTER);
 
         urlField = new TextField();
         urlField.setPromptText("Cole o link do vídeo do YouTube aqui...");
@@ -57,6 +70,7 @@ public class Main extends Application {
         fetchBtn = new Button("Buscar");
         fetchBtn.setPrefHeight(35);
         fetchBtn.setOnAction(e -> onFetchInfo());
+        fetchBtn.getStyleClass().add("button-primary");
 
         // card do vídeo
         thumbnailView = new ImageView();
@@ -90,6 +104,7 @@ public class Main extends Application {
         resolutionCombo = new ComboBox<>();
         resolutionCombo.getItems().addAll("Melhor Qualidade (1080p+ / 4K)", "1080p", "720p", "480p");
         resolutionCombo.setValue("Melhor Qualidade (1080p+ / 4K)");
+        resolutionCombo.getStyleClass().add("");
 
         // qualidade do áudio
         audioQualityCombo = new ComboBox<>();
@@ -112,6 +127,7 @@ public class Main extends Application {
         HBox optionsBox = new HBox(15, formatLabel, formatCombo, resLabel, resolutionCombo, audioQualityCombo);
         optionsBox.setAlignment(Pos.CENTER_LEFT);
 
+
         // seção da pasta
         Label folderTitle = new Label("Salvar em:");
         folderPathLabel = new Label(selectedFolder.getAbsolutePath());
@@ -119,6 +135,7 @@ public class Main extends Application {
 
         selectFolderBtn = new Button("Alterar Pasta...");
         selectFolderBtn.setOnAction(e -> onSelectFolder(stage));
+        selectFolderBtn.getStyleClass().add("button-secondary");
 
         HBox folderBox = new HBox(10, folderTitle, folderPathLabel, selectFolderBtn);
         folderBox.setAlignment(Pos.CENTER_LEFT);
@@ -135,7 +152,7 @@ public class Main extends Application {
         progressBar.setPrefWidth(600);
         progressBar.setVisible(false);
 
-        statusLabel = new Label("Pronto.");
+        statusLabel = new Label("Pronto para começar");
 
         VBox statusBox = new VBox(5, progressBar, statusLabel);
         statusBox.setAlignment(Pos.CENTER);
@@ -145,7 +162,7 @@ public class Main extends Application {
         HBox.setHgrow(urlField, Priority.ALWAYS);
         HBox.setHgrow(folderPathLabel, Priority.ALWAYS);
 
-        VBox root = new VBox(15, mainTitle, inputRow, cardBox, optionsBox, folderBox, downloadBtn, statusBox);
+        VBox root = new VBox(15, headerBox, inputRow, cardBox, optionsBox, folderBox, downloadBtn, statusBox);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
 
@@ -156,7 +173,11 @@ public class Main extends Application {
         String cssPath = Objects.requireNonNull(getClass().getResource("/style.css")).toExternalForm();
         scene.getStylesheets().add(cssPath);
 
-        stage.setTitle("Ixtal Media Downloader");
+        var iconStream = getClass().getResourceAsStream("/icon.png");
+        if (iconStream != null) {
+            stage.getIcons().add(new Image(iconStream));
+        }
+        stage.setTitle("Ixtal Downloader");
         stage.setScene(scene);
         stage.setResizable(false);
         stage.show();
