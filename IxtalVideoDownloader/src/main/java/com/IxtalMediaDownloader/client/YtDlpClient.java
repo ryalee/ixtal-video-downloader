@@ -216,7 +216,7 @@ public class YtDlpClient {
             } catch (NumberFormatException ignored) {
             }
         } else if (line.contains("[Merger]") || line.contains("Merging")) {
-            progressListener.accept(-1.0, "Juntando áudio e vídeo com FFmpeg...");
+            progressListener.accept(-1.0, "Só mais um pouquinho...");
         } else if (line.contains("[ExtractAudio]") || line.contains("Converting")) {
             progressListener.accept(-1.0, "Convertendo para MP3...");
         }
