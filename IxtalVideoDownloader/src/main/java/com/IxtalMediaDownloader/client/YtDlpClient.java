@@ -126,8 +126,7 @@ public class YtDlpClient {
                 "--concurrent-fragments", "4",
                 "--buffer-size", "16k",
                 "--no-playlist",
-                "--ffmpeg-location", ffmpegPath,
-                "--js-runtimes", "node"
+                "--ffmpeg-location", ffmpegPath
         ));
 
         if ("Apenas Áudio (MP3)".equals(formatChoice)) {
@@ -150,9 +149,9 @@ public class YtDlpClient {
             // regra pra mesclar vídeo e áudio em MP4
             String formatRule = switch (resolutionChoice) {
                 case "1080p" -> "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best";
-                case "720p"  -> "bestvideo[height<=720]+bestaudio/best[height<=720]/best";
-                case "480p"  -> "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
-                default      -> "bestvideo+bestaudio/best";
+                case "720p" -> "bestvideo[height<=720]+bestaudio/best[height<=720]/best";
+                case "480p" -> "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
+                default -> "bestvideo+bestaudio/best";
             };
 
             command.addAll(Arrays.asList(
@@ -164,24 +163,40 @@ public class YtDlpClient {
         }
 
         ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
+        pb.redirectErrorStream(true); // redireciona os erros (stderr) para o stdout
 
         Process process = pb.start();
 
+        // armazena o output do processo p mostrar a msg caso o download falhe
+        StringBuilder fullOutput = new StringBuilder();
+
         try {
+            // le o stream só uma vez
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    parseProgressLine(line, progressListener);
+                    fullOutput.append(line).append("\n");
+                    parseProgressLine(line, progressListener); // Atualiza a barra de progresso
                 }
             }
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                throw new RuntimeException("Falha no download. Código de erro: " + exitCode);
+                // Se der erro, pega o log capturado para exibir na tela do JavaFX
+                String logText = fullOutput.toString().trim();
+                if (logText.isEmpty()) {
+                    logText = "O processo do yt-dlp/ffmpeg foi encerrado inesperadamente (sem log).";
+                } else {
+                    // Pega as últimas 6 linhas do log onde o erro real é impresso
+                    String[] lines = logText.split("\n");
+                    int start = Math.max(0, lines.length - 6);
+                    logText = String.join("\n", Arrays.copyOfRange(lines, start, lines.length));
+                }
+
+                throw new RuntimeException("Falha no download (Código " + exitCode + "):\n" + logText);
             }
 
-            // transfere o arquivo final da pasta temp para a pasta selecionada
+            // Transfere o arquivo final da pasta temporária para a pasta selecionada pelo usuário
             try (var stream = java.nio.file.Files.list(tempFolder)) {
                 for (Path file : stream.toList()) {
                     Path targetPath = outputDir.resolve(file.getFileName());
@@ -191,7 +206,7 @@ public class YtDlpClient {
 
         } finally {
             process.destroy();
-            // limpaa pasta temporária do sistema
+            // limpa a pasta temporária do sistema
             try {
                 java.nio.file.Files.walk(tempFolder)
                         .sorted(java.util.Comparator.reverseOrder())
